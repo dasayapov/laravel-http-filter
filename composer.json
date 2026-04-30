@@ -1,0 +1,19 @@
+{
+    "name": "dasayapov/laravel-http-filter",
+    "description": "Monitoring and filtering http requests",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Dasayapov\\LaravelHttpFilter\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Damir Sayapov",
+            "email": "da.sayapov@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
