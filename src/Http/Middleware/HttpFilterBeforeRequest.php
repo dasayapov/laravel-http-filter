@@ -19,47 +19,65 @@ class HttpFilterBeforeRequest
      */
     public function handle(Request $request, Closure $next)
     {
-        // Добавить лог запросов
-//        try {
+        $ipAddress = $request->getClientIp();
+        $abort = false;
 
-            $requestData = [
-                'method'        => substr($request->getMethod(), 0, 10),
-                'domain'        => substr($request->getHost(), 0, 255),
-                'url'           => substr($request->getRequestUri(), 0, 255),
-                'ip'            => $request->getClientIp(),
-                'user_agent'    => substr($request->userAgent(), 0, 255),
-                'created_at'    => now()->format('Y-m-d H:i:s'),
-            ];
+        $requestData = [
+            'method'        => substr($request->getMethod(), 0, 10),
+            'domain'        => substr($request->getHost(), 0, 255),
+            'url'           => substr($request->getRequestUri(), 0, 255),
+            'input'         => $request->input(),
+            'ip'            => $request->getClientIp(),
+            'user_agent'    => substr($request->userAgent(), 0, 255),
+            'created_at'    => now()->format('Y-m-d H:i:s'),
+        ];
 
-            // Проверить блокировку IP и сохранить в лог запросов
-            $ipAddress = $request->getClientIp();
-            $ip = HttpFilterIp::firstOrCreate(['ip' => $ipAddress], ['ip' => $ipAddress]);
-            if ($ip->is_blocked) {
+        $ip = HttpFilterIp::firstOrCreate(['ip' => $ipAddress], ['ip' => $ipAddress]);
 
-                if ($ip->block_expire_at->gt(now())) {
-                    $requestData['code'] = config('http_filter.blocked_http_code');
+        // Заблокирован и время не прошло
+        if ($ip->is_blocked && $ip->block_expire_at->gt(now())) {
+            $abort = true;
+        }
 
-                    try {
-                        HttpFilterRequest::create($requestData);
-                    } catch (\Throwable $e) {
-                        Log::error($e->getMessage());
-                    }
-                    abort(config('http_filter.blocked_http_code'));
-                } else {
-                    $ip->update([
-                        'is_blocked'        => 0,
-                        'blocked_at'        => null,
-                        'block_expire_at'   => null,
-                    ]);
-                }
+        // Заблокирован и время прошло - разблокировать
+        elseif ($ip->is_blocked && $ip->block_expire_at->lte(now())) {
+            $ip->unblock();
+        }
+
+        if (!$abort && config('http_filter.stop_words.enabled')) {
+            // Проверить стоп-слова в адресе
+            $qpos = mb_strpos($_SERVER['REQUEST_URI'], '?');
+            if ($qpos !== false) {
+                $url = substr($_SERVER['REQUEST_URI'], 0, $qpos);
+            } else {
+                $url = $_SERVER['REQUEST_URI'];
             }
 
+            foreach (config('http_filter.stop_words.list') as $stopword) {
+                if (str_contains($url, $stopword)) {
+                    $ip->block(now()->addSeconds(config('http_filter.block_expiration_time')));
+                    $abort = true;
+                    break;
+                }
+            }
+        }
+
+        if ($abort) {
+            // Сохранить данные
+            $requestData['code'] = config('http_filter.blocked_http_code');
+
+            if (config('http_filter.requests.enabled')) {
+                HttpFilterRequest::create($requestData);
+            }
+
+            // Счетчик
+            $ip->increment('requests_count');
+
+            abort(config('http_filter.blocked_http_code'));
+        } else {
             $request->attributes->set('http_filter_request', $requestData);
             $request->attributes->set('http_filter_request_time', microtime(true));
-
-//        } catch (\Throwable $e) {
-//            Log::error($e->getMessage());
-//        }
+        }
 
         return $next($request);
     }

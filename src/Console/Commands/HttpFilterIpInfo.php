@@ -57,5 +57,11 @@ class HttpFilterIpInfo extends Command
         $status = $ip->is_blocked ? 'Заблокирован' : 'Не заблокирован';
         $this->info('IP ' . $ipAddress . ' ' . $status);
 
+        if ($ip->is_blocked) {
+            $this->info('--unblock - разблокировать');
+        } else {
+            $this->info('--block - заблокировать');
+        }
+
     }
 }

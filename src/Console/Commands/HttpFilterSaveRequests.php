@@ -29,17 +29,26 @@ class HttpFilterSaveRequests extends Command
      */
     public function handle()
     {
+        // С отключенным кэшем или без сохранения не работает
+        if (
+            !config('http_filter.cache.enabled')
+            ||
+            !config('http_filter.requests.enabled')
+        ) {
+            exit;
+        }
+
         $allRequests = [];
         $maxCount = 100;
         for ($i = 0; $i < $maxCount; $i++) {
             $cacheKey = 'http_filter_requests_' . $i;
 
-            $data = Cache::get($cacheKey, []);
+            $data = Cache::driver(config('http_filter.cache.driver'))->get($cacheKey, []);
 
             if (empty($data)) continue;
 
             // Очистить кэш
-            Cache::forget($cacheKey);
+            Cache::driver(config('http_filter.cache.driver'))->forget($cacheKey);
 
             // Обработать данные
             foreach ($data as $item) {
@@ -83,17 +92,28 @@ class HttpFilterSaveRequests extends Command
             $data = [];
 
             // Блокировать IP на время: много 404/405 или частые запросы
-            if (
-                $ipStat['not_found'] > config('http_filter.not_fount_per_minute')
-                ||
-                $ipStat['requests'] > config('http_filter.requests_per_minute')
-            ) {
 
+            if (
+                (
+                    config('http_filter.requests.not_found.enabled')
+                    &&
+                    $ipStat['not_found'] > config('http_filter.requests.not_found.per_minute')
+                )
+                ||
+                (
+                    config('http_filter.requests.rate_limit.enabled')
+                    &&
+                    $ipStat['requests'] > config('http_filter.requests.rate_limit.per_minute')
+                )
+            ) {
+                $data['requests_count'] = $ip->requests_count + $ipStat['requests'];
                 $data['is_blocked'] = 1;
                 $data['blocked_at'] = now();
                 $data['block_expire_at'] = now()->addSeconds(config('http_filter.block_expiration_time'));
 
                 $ip->update($data);
+            } else {
+                $ip->increment('requests_count', $ipStat['requests']);
             }
         }
     }

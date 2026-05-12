@@ -33,6 +33,10 @@ class HttpFilterRequest extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'method', 'domain', 'url', 'ip', 'user_agent', 'time', 'code', 'created_at',
+        'method', 'domain', 'url', 'input', 'ip', 'user_agent', 'time', 'code', 'created_at',
+    ];
+
+    protected $casts = [
+        'input' => 'json',
     ];
 }

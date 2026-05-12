@@ -4,6 +4,8 @@ namespace Dasayapov\LaravelHttpFilter;
 
 use Dasayapov\LaravelHttpFilter\Console\Commands\HttpFilterIpInfo;
 use Dasayapov\LaravelHttpFilter\Console\Commands\HttpFilterSaveRequests;
+use Dasayapov\LaravelHttpFilter\Events\HttpFilterBlockedEvent;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class HttpFilterProvider extends ServiceProvider

@@ -3,6 +3,9 @@
     "description": "Monitoring and filtering http requests",
     "type": "library",
     "license": "MIT",
+    "required": {
+        "php": "^8.0"
+    },
     "autoload": {
         "psr-4": {
             "Dasayapov\\LaravelHttpFilter\\": "src/"
@@ -14,6 +17,6 @@
             "email": "da.sayapov@gmail.com"
         }
     ],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "require": {}
 }
