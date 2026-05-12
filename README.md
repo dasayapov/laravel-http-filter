@@ -28,10 +28,7 @@ php artisan http-filter:ip-info {ip} {--unblock} {--block} {--block-time=3600}
 
 ## Добавить middleware
 
-### Проверка стоп-слов
-`HttpFilterCheckStopWords::class,`
-
-### Сбор данных и блокировка
+### Сбор данных, проверка стоп-слов и блокировка
 `HttpFilterBeforeRequest::class,`
 
 ### Сохранение данных запроса
@@ -48,6 +45,8 @@ php artisan make:listener HttpFilterBlockedListener
 
 ## История обновлений
 
-`1.1.0` Добавлено сохранение параметров запроса
+`2.0.1` Мелкие правки
+
+`2.0.0` Добавлено сохранение параметров запроса
 
 `1.0.0` Первая версия
