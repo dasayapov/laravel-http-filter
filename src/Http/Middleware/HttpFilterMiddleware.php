@@ -7,9 +7,11 @@ use Dasayapov\LaravelHttpFilter\Events\HttpFilterBlockedEvent;
 use Dasayapov\LaravelHttpFilter\Models\HttpFilterIp;
 use Dasayapov\LaravelHttpFilter\Models\HttpFilterRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
-class HttpFilterBeforeRequest
+class HttpFilterMiddleware
 {
     /**
      * Handle an incoming request.
@@ -20,6 +22,8 @@ class HttpFilterBeforeRequest
      */
     public function handle(Request $request, Closure $next)
     {
+        // ОБработать даныне до запроса
+
         $ipAddress = $request->getClientIp();
         $abort = false;
 
@@ -82,6 +86,32 @@ class HttpFilterBeforeRequest
             $request->attributes->set('http_filter_request_time', microtime(true));
         }
 
-        return $next($request);
+        // ОБработать запрос
+        $response = $next($request);
+
+        // Обработать данные после запроса
+        
+        try {
+            $requestData = $request->attributes->get('http_filter_request');
+            if ($requestData && config('http_filter.requests.enabled')) {
+                // Сохранить данные запроса
+                $requestData['time'] = round(microtime(true) - $request->attributes->get('http_filter_request_time'), 2);
+                $requestData['code'] = $response->getStatusCode();
+
+                if (config('http_filter.cache.enabled')) {
+                    // В рандомный кэш на 3 минуты
+                    $cacheKey = 'http_filter_requests_' . mt_rand(1, 100);
+                    $data = Cache::get($cacheKey, []);
+                    $data[] = $requestData;
+                    Cache::driver(config('http_filter.cache_driver'))->put($cacheKey, $data, 180);
+                } else {
+                    HttpFilterRequest::create($requestData);
+                }
+            }
+        } catch (Throwable $e) {
+            Log::error($e->getMessage());
+            Log::error($e->getTraceAsString());
+        }
+        return $response;
     }
 }

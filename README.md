@@ -27,12 +27,7 @@ php artisan http-filter:save-requests
 php artisan http-filter:ip-info {ip} {--unblock} {--block} {--block-time=3600}
 
 ## Добавить middleware
-
-### Сбор данных, проверка стоп-слов и блокировка
-`HttpFilterBeforeRequest::class,`
-
-### Сохранение данных запроса
-`HttpFilterAfterRequest::class,`
+`HttpFilterMiddleware::class,`
 
 ## События
 ### HttpFilterBlockedEvent - IP заблокирован
@@ -43,7 +38,16 @@ php artisan make:listener HttpFilterBlockedListener
 В файл AppServiceProvider - boot() добавить 
 `Event::listen(HttpFilterBlockedEvent::class, HttpFilterBlockedListener::class);`
 
+```php
+public function handle(HttpFilterBlockedEvent $event): void
+{
+    $httpFilterIp = HttpFilterIp::find($event->httpFilterIpId);
+}
+```
+
 ## История обновлений
+
+`2.3.0` Мелкие правки
 
 `2.0.1` Мелкие правки
 
