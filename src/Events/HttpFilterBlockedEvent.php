@@ -2,6 +2,7 @@
 
 namespace Dasayapov\LaravelHttpFilter\Events;
 
+use Dasayapov\LaravelHttpFilter\Models\HttpFilterIp;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -14,12 +15,23 @@ class HttpFilterBlockedEvent
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    public int $httpFilterIpId;
+
+    public int $type;
+
+    const TYPE_STOP_WORDS = 1;
+
+    const TYPE_NOT_FOUND = 2;
+
+    const TYPE_RATE_LIMIT = 3;
+
     /**
      * Create a new event instance.
      */
-    public function __construct()
+    public function __construct($ipId, $type)
     {
-        //
+        $this->httpFilterIpId = $ipId;
+        $this->type = $type;
     }
 
     /**

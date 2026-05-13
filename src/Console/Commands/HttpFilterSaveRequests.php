@@ -3,6 +3,7 @@
 
 namespace Dasayapov\LaravelHttpFilter\Console\Commands;
 
+use Dasayapov\LaravelHttpFilter\Events\HttpFilterBlockedEvent;
 use Dasayapov\LaravelHttpFilter\Models\HttpFilterIp;
 use Dasayapov\LaravelHttpFilter\Models\HttpFilterRequest;
 use Illuminate\Console\Command;
@@ -93,23 +94,32 @@ class HttpFilterSaveRequests extends Command
 
             // Блокировать IP на время: много 404/405 или частые запросы
 
-            if (
-                (
-                    config('http_filter.requests.not_found.enabled')
-                    &&
-                    $ipStat['not_found'] > config('http_filter.requests.not_found.per_minute')
-                )
-                ||
-                (
-                    config('http_filter.requests.rate_limit.enabled')
-                    &&
-                    $ipStat['requests'] > config('http_filter.requests.rate_limit.per_minute')
-                )
-            ) {
+            $checkNotFound = (
+                config('http_filter.requests.not_found.enabled')
+                &&
+                $ipStat['not_found'] > config('http_filter.requests.not_found.per_minute')
+            );
+
+            $checkRateLimit = (
+                config('http_filter.requests.rate_limit.enabled')
+                &&
+                $ipStat['requests'] > config('http_filter.requests.rate_limit.per_minute')
+            );
+
+            if ($checkNotFound || $checkRateLimit) {
                 $data['requests_count'] = $ip->requests_count + $ipStat['requests'];
                 $data['is_blocked'] = 1;
                 $data['blocked_at'] = now();
                 $data['block_expire_at'] = now()->addSeconds(config('http_filter.block_expiration_time'));
+
+                if ($checkNotFound) {
+                    $type = HttpFilterBlockedEvent::TYPE_NOT_FOUND;
+                } else {
+                    $type = HttpFilterBlockedEvent::TYPE_RATE_LIMIT;
+                }
+
+                // Событие
+                HttpFilterBlockedEvent::dispatch($ip->id, $type);
 
                 $ip->update($data);
             } else {

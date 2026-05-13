@@ -3,6 +3,7 @@
 namespace Dasayapov\LaravelHttpFilter\Http\Middleware;
 
 use Closure;
+use Dasayapov\LaravelHttpFilter\Events\HttpFilterBlockedEvent;
 use Dasayapov\LaravelHttpFilter\Models\HttpFilterIp;
 use Dasayapov\LaravelHttpFilter\Models\HttpFilterRequest;
 use Illuminate\Http\Request;
@@ -57,6 +58,8 @@ class HttpFilterBeforeRequest
                 if (str_contains($url, $stopword)) {
                     $ip->block(now()->addSeconds(config('http_filter.block_expiration_time')));
                     $abort = true;
+                    // Событие
+                    HttpFilterBlockedEvent::dispatch($ip->id, HttpFilterBlockedEvent::TYPE_STOP_WORDS);
                     break;
                 }
             }
