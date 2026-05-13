@@ -119,7 +119,9 @@ class HttpFilterSaveRequests extends Command
                 }
 
                 // Событие
-                HttpFilterBlockedEvent::dispatch($ip->id, $type);
+                HttpFilterBlockedEvent::dispatch($ip->id, $type, [
+                    'stat' => $ipStat,
+                ]);
 
                 $ip->update($data);
             } else {

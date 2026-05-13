@@ -19,6 +19,8 @@ class HttpFilterBlockedEvent
 
     public int $type;
 
+    public array $data;
+
     const TYPE_STOP_WORDS = 1;
 
     const TYPE_NOT_FOUND = 2;
@@ -28,10 +30,11 @@ class HttpFilterBlockedEvent
     /**
      * Create a new event instance.
      */
-    public function __construct($ipId, $type)
+    public function __construct($ipId, $type, $data = [])
     {
         $this->httpFilterIpId = $ipId;
         $this->type = $type;
+        $this->data = $data;
     }
 
     /**

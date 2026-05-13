@@ -63,7 +63,9 @@ class HttpFilterMiddleware
                     $ip->block(now()->addSeconds(config('http_filter.block_expiration_time')));
                     $abort = true;
                     // Событие
-                    HttpFilterBlockedEvent::dispatch($ip->id, HttpFilterBlockedEvent::TYPE_STOP_WORDS);
+                    HttpFilterBlockedEvent::dispatch($ip->id, HttpFilterBlockedEvent::TYPE_STOP_WORDS, [
+                        'stop_word' => $stopword,
+                    ]);
                     break;
                 }
             }
@@ -90,7 +92,7 @@ class HttpFilterMiddleware
         $response = $next($request);
 
         // Обработать данные после запроса
-        
+
         try {
             $requestData = $request->attributes->get('http_filter_request');
             if ($requestData && config('http_filter.requests.enabled')) {
