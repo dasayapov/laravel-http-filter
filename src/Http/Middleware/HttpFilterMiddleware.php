@@ -60,7 +60,15 @@ class HttpFilterMiddleware
 
             foreach (config('http_filter.stop_words.list') as $stopword) {
                 if (str_contains($url, $stopword)) {
-                    $ip->block(now()->addSeconds(config('http_filter.block_expiration_time')));
+
+                    // Индивидуальное время
+                    if (config('http_filter.stop_words.block_expiration_time')) {
+                        $ip->block(now()->addSeconds(config('http_filter.stop_words.block_expiration_time')));
+                    } else {
+                        // Общее время
+                        $ip->block(now()->addSeconds(config('http_filter.block_expiration_time')));
+                    }
+
                     $abort = true;
                     // Событие
                     HttpFilterBlockedEvent::dispatch($ip->id, HttpFilterBlockedEvent::TYPE_STOP_WORDS, [

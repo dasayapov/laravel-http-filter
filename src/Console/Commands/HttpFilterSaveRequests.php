@@ -107,15 +107,31 @@ class HttpFilterSaveRequests extends Command
             );
 
             if ($checkNotFound || $checkRateLimit) {
+
                 $data['requests_count'] = $ip->requests_count + $ipStat['requests'];
                 $data['is_blocked'] = 1;
                 $data['blocked_at'] = now();
-                $data['block_expire_at'] = now()->addSeconds(config('http_filter.block_expiration_time'));
 
                 if ($checkNotFound) {
                     $type = HttpFilterBlockedEvent::TYPE_NOT_FOUND;
+
+                    // Индивидуальное время
+                    if (config('http_filter.requests.not_found.block_expiration_time')) {
+                        $data['block_expire_at'] = now()->addSeconds(config('http_filter.requests.not_found.block_expiration_time'));
+                    } else {
+                        // Общее время
+                        $data['block_expire_at'] = now()->addSeconds(config('http_filter.block_expiration_time'));
+                    }
                 } else {
                     $type = HttpFilterBlockedEvent::TYPE_RATE_LIMIT;
+
+                    // Индивидуальное время
+                    if (config('http_filter.request.rate_limit.block_expiration_time')) {
+                        $data['block_expire_at'] = now()->addSeconds(config('http_filter.request.rate_limit.block_expiration_time'));
+                    } else {
+                        // Общее время
+                        $data['block_expire_at'] = now()->addSeconds(config('http_filter.block_expiration_time'));
+                    }
                 }
 
                 // Событие

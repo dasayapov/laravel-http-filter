@@ -44,13 +44,3 @@ public function handle(HttpFilterBlockedEvent $event): void
     $httpFilterIp = HttpFilterIp::find($event->httpFilterIpId);
 }
 ```
-
-## История обновлений
-
-`2.3.0` Мелкие правки
-
-`2.0.1` Мелкие правки
-
-`2.0.0` Добавлено сохранение параметров запроса
-
-`1.0.0` Первая версия
