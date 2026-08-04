@@ -27,13 +27,21 @@ class HttpFilterMiddleware
         $ipAddress = $request->getClientIp();
         $abort = false;
 
+        $input = [];
+        try {
+            $input = $request->input();
+        } catch (Throwable $e) {
+            Log::error($e->getMessage());
+            Log::error($e->getTraceAsString());
+        }
+
         $requestData = [
             'method'        => substr($request->getMethod(), 0, 10),
             'domain'        => substr($request->getHost(), 0, 255),
             'url'           => substr($request->getRequestUri(), 0, 255),
-            'input'         => $request->input(),
+            'input'         => $input,
             'ip'            => $request->getClientIp(),
-            'user_agent'    => substr($request->userAgent(), 0, 255),
+            'user_agent'    => htmlspecialchars(substr($request->userAgent(), 0, 255)),
             'created_at'    => now()->format('Y-m-d H:i:s'),
         ];
 
