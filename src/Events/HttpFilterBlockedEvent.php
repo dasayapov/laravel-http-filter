@@ -27,6 +27,8 @@ class HttpFilterBlockedEvent
 
     const TYPE_RATE_LIMIT = 3;
 
+    const TYPE_USER_AGENT = 4;
+
     /**
      * Create a new event instance.
      */

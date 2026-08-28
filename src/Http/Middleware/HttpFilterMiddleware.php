@@ -22,9 +22,10 @@ class HttpFilterMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        // ОБработать даныне до запроса
+        // Обработать данные до запроса
 
         $ipAddress = $request->getClientIp();
+        $userAgent = $request->userAgent();
         $abort = false;
 
         $input = [];
@@ -36,12 +37,12 @@ class HttpFilterMiddleware
         }
 
         $requestData = [
-            'method'        => substr($request->getMethod(), 0, 10),
-            'domain'        => substr($request->getHost(), 0, 255),
-            'url'           => substr($request->getRequestUri(), 0, 255),
+            'method'        => mb_substr($request->getMethod(), 0, 10),
+            'domain'        => mb_substr($request->getHost(), 0, 255),
+            'url'           => mb_substr($request->getRequestUri(), 0, 255),
             'input'         => $input,
             'ip'            => $request->getClientIp(),
-            'user_agent'    => htmlspecialchars(substr($request->userAgent(), 0, 255)),
+            'user_agent'    => htmlspecialchars(mb_substr($request->userAgent(), 0, 255)),
             'created_at'    => now()->format('Y-m-d H:i:s'),
         ];
 
@@ -61,7 +62,7 @@ class HttpFilterMiddleware
             // Проверить стоп-слова в адресе
             $qpos = mb_strpos($_SERVER['REQUEST_URI'], '?');
             if ($qpos !== false) {
-                $url = substr($_SERVER['REQUEST_URI'], 0, $qpos);
+                $url = mb_substr($_SERVER['REQUEST_URI'], 0, $qpos);
             } else {
                 $url = $_SERVER['REQUEST_URI'];
             }
@@ -81,6 +82,30 @@ class HttpFilterMiddleware
                     // Событие
                     HttpFilterBlockedEvent::dispatch($ip->id, HttpFilterBlockedEvent::TYPE_STOP_WORDS, [
                         'stop_word' => $stopword,
+                    ]);
+                    break;
+                }
+            }
+        }
+
+        if (!$abort && config('http_filter.user_agents.enabled')) {
+            // Проверить user-agent
+            foreach (config('http_filter.user_agents.list') as $userAgentKeyword) {
+                if (str_contains($userAgent, $userAgentKeyword)) {
+
+                    // Индивидуальное время
+                    if (config('http_filter.user_agents.block_expiration_time')) {
+                        $ip->block(now()->addSeconds(config('http_filter.user_agents.block_expiration_time')));
+                    } else {
+                        // Общее время
+                        $ip->block(now()->addSeconds(config('http_filter.block_expiration_time')));
+                    }
+
+                    $abort = true;
+
+                    // Событие
+                    HttpFilterBlockedEvent::dispatch($ip->id, HttpFilterBlockedEvent::TYPE_USER_AGENT, [
+                        'user_agent' => $userAgentKeyword,
                     ]);
                     break;
                 }

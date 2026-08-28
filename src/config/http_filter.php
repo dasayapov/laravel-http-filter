@@ -27,6 +27,28 @@ return [
         'block_expiration_time' => 3600 * 24,
     ],
 
+    /**
+     * User-agent
+     */
+    'user_agents' => [
+        /**
+         * Включена ли проверка user-agent
+         */
+        'enabled'   => true,
+
+        /**
+         * Список ключевых слов
+         */
+        'list'      => [
+            'crusader-worker',
+        ],
+
+        /**
+         * На сколько блокировать - индивидуальное время
+         */
+        'block_expiration_time' => 3600 * 24,
+    ],
+
     'requests' => [
         /**
          * Сохранение запросов в базу
